@@ -1,22 +1,25 @@
 (function () {
   "use strict";
 
-  // Инициализация платформы (для Android TV/Tizen/WebOS)
+  // Инициализация платформы
   Lampa.Platform.tv();
 
   (function () {
     "use strict";
 
     function startPlugin() {
-      // Проверка на происхождение сборки (работает только на сборке bylampa)
-      // Можно закомментировать это условие, если хотите проверить на обычной Lampa
-      if (Lampa.Manifest.origin !== "bylampa") {
-        Lampa.Noty.show("Ошибка доступа");
-        return;
-      }
+      // -------------------------------------------------------------------------
+      // НАСТРОЙКИ СЕРВЕРА
+      // Укажите здесь IP адрес вашего Node.js сервера.
+      // Если запускаете Lampa в браузере на том же ПК, можно оставить localhost/127.0.0.1
+      // Если на телевизоре - укажите локальный IP компьютера (например, http://192.168.1.X:803)
+      // -------------------------------------------------------------------------
+      var serverUrl = "http://127.0.0.1:803"; 
 
-      // HTML шаблон для QR кода
-      var qrCodeHtml = '<div class="myBot" style="line-height: 1;color: #ffffff;font-family: &quot;SegoeUI&quot;, sans-serif;font-size: 1em;box-sizing: border-box;outline: none;user-select: none;display: flex;-webkit-box-align: start;align-items: flex-start;position: relative;background-color: rgba(255, 255, 255, 0.1);border-radius: 0.3em;margin: 1.5em 2em;"><div class="ad-server__text">Для получения токена перейдите в наш телеграм бот</div><div class="ad-server__label">@bylampa_sync_bot</div><img class="ad-server__qr" style="opacity: 1; border: 0.5em solid rgb(60, 62, 63); border-radius: 0.3em; box-sizing: border-box;" src="http://bylampa.online/img/qr_sync.png"></div>';
+      // --- ПРОВЕРКА НА СБОРКУ УДАЛЕНА ---
+      
+      // HTML шаблон (QR код можно поменять на свой или удалить картинку, так как старый бот не актуален)
+      var qrCodeHtml = '<div class="myBot" style="line-height: 1;color: #ffffff;font-family: &quot;SegoeUI&quot;, sans-serif;font-size: 1em;box-sizing: border-box;outline: none;user-select: none;display: flex;-webkit-box-align: start;align-items: flex-start;position: relative;background-color: rgba(255, 255, 255, 0.1);border-radius: 0.3em;margin: 1.5em 2em;"><div class="ad-server__text">Для создания токена перейдите на сервер: <br>' + serverUrl + '/create_user</div></div>';
 
       // Добавление компонента "Аккаунт" в настройки
       Lampa.SettingsApi.addComponent({
@@ -25,35 +28,29 @@
         icon: '<svg fill="#ffffff" width="256px" height="256px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M16 17.25c4.556 0 8.25-3.694 8.25-8.25s-3.694-8.25-8.25-8.25c-4.556 0-8.25 3.694-8.25 8.25v0c0.005 4.554 3.696 8.245 8.249 8.25h0.001zM16 3.25c3.176 0 5.75 2.574 5.75 5.75s-2.574 5.75-5.75 5.75c-3.176 0-5.75-2.574-5.75-5.75v0c0.004-3.174 2.576-5.746 5.75-5.75h0zM30.898 29.734c-1.554-6.904-7.633-11.984-14.899-11.984s-13.345 5.080-14.88 11.882l-0.019 0.102c-0.018 0.080-0.029 0.172-0.029 0.266 0 0.69 0.56 1.25 1.25 1.25 0.596 0 1.095-0.418 1.22-0.976l0.002-0.008c1.301-5.77 6.383-10.016 12.457-10.016s11.155 4.245 12.44 9.93l0.016 0.085c0.126 0.566 0.623 0.984 1.219 0.984h0c0 0 0 0 0 0 0.095 0 0.187-0.011 0.276-0.031l-0.008 0.002c0.567-0.125 0.984-0.623 0.984-1.219 0-0.095-0.011-0.187-0.031-0.276l0.002 0.008z"></path></svg>'
       });
 
-      // Слушатель открытия настроек для управления отображением
+      // Слушатель открытия настроек
       Lampa.Settings.listener.follow("open", function (e) {
         setTimeout(function () {
-          // Перемещаем "Аккаунт" перед "Интерфейсом"
           $("div[data-component=interface]").before($("div[data-component=acc]"));
         }, 30);
 
         if (e.name == "acc") {
-          // Вставляем QR код перед полем авторизации
           $('div[data-name="acc_auth"]').before(qrCodeHtml);
 
-          // Проверка авторизации
           if (localStorage.getItem("token") !== null) {
-            $('div[data-name="acc_auth"]').hide(); // Скрываем поле ввода токена
+            $('div[data-name="acc_auth"]').hide();
             
-            // Фокус на кнопку управления
             var focusElement = document.querySelector("#app > div.settings > div.settings__content.layer--height > div.settings__body > div > div > div > div > div:nth-child(5)");
-            Lampa.Controller.focus(focusElement);
+            if(focusElement) Lampa.Controller.focus(focusElement);
             Lampa.Controller.toggle("settings_component");
           } else {
-            // Если не авторизован, скрываем статус и кнопку выхода
             $('div > span:contains("Аккаунт")').hide();
             $('.settings-param > div:contains("Выйти")').parent().hide();
           }
         }
       });
 
-      // --- Параметры Настроек ---
-
+      // --- Параметры интерфейса ---
       Lampa.SettingsApi.addParam({
         component: "acc",
         param: { name: "acc_title_auth", type: "title" },
@@ -63,36 +60,33 @@
       // Поле ввода токена
       Lampa.SettingsApi.addParam({
         component: "acc",
-        param: { name: "acc_auth", type: "input", values: "", placeholder: "Нужно будет ввести токен", default: "" },
+        param: { name: "acc_auth", type: "input", values: "", placeholder: "Введите токен", default: "" },
         field: { name: "Выполнить вход", description: "" },
         onChange: function (token) {
           console.log("Введенный токен:", token);
           var xhr = new XMLHttpRequest();
-          xhr.open("POST", "http://94.156.115.58:803/checkToken", true);
+          xhr.open("POST", serverUrl + "/checkToken", true);
           xhr.setRequestHeader("Content-Type", "application/json");
           xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
               var response = JSON.parse(xhr.responseText);
-              console.log("Ответ сервера:", response);
               if (response.userId) {
-                console.log("Токен действителен");
                 localStorage.setItem("token", token);
                 Lampa.Noty.show("Токен действителен");
                 Lampa.Settings.update();
               } else {
-                console.log("Токен недействителен");
                 localStorage.removeItem("token");
                 Lampa.Noty.show("Токен недействителен");
               }
             } else if (xhr.readyState === 4) {
-              Lampa.Noty.show("Ошибка запроса");
+              Lampa.Noty.show("Ошибка запроса к серверу");
             }
           };
           xhr.send(JSON.stringify({ token: token }));
         }
       });
 
-      // Статус подключения (HTML с иконками)
+      // Статус
       Lampa.SettingsApi.addParam({
         component: "acc",
         param: { name: "acc_status", type: "title" },
@@ -102,7 +96,7 @@
         }
       });
 
-      // Кнопка выхода
+      // Выход
       Lampa.SettingsApi.addParam({
         component: "acc",
         param: { name: "acc_exit", type: "static" },
@@ -116,15 +110,14 @@
         }
       });
 
-      // --- Бэкап и Синхронизация ---
-
+      // --- Секция Синхронизации ---
       Lampa.SettingsApi.addParam({
         component: "acc",
         param: { name: "acc_title_sync", type: "title" },
         field: { name: "Синхронизация", description: "" }
       });
 
-      // Бэкап (Импорт/Экспорт)
+      // Бэкап
       Lampa.SettingsApi.addParam({
         component: "acc",
         param: { name: "acc_backup", type: "static", default: "" },
@@ -153,7 +146,7 @@
                       ],
                       onSelect: function (conf) {
                         if (conf.export) {
-                          var url = "http://94.156.115.58:803/lampa/backup/export?token=" + encodeURIComponent(token);
+                          var url = serverUrl + "/lampa/backup/export?token=" + encodeURIComponent(token);
                           var file = new File([JSON.stringify(localStorage)], "backup.json", { type: "text/plain" });
                           var formData = new FormData();
                           formData.append("file", file);
@@ -182,7 +175,7 @@
                       }
                     });
                   } else if (selected.import) {
-                    var url = "http://94.156.115.58:803/lampa/backup/import?token=" + encodeURIComponent(token);
+                    var url = serverUrl + "/lampa/backup/import?token=" + encodeURIComponent(token);
                     $.ajax({
                       url: url,
                       type: "GET",
@@ -263,10 +256,8 @@
         }
       });
 
-      // Ключи, которые нужно синхронизировать
       var syncKeys = ["torrents_view", "plugins", "favorite", "file_view", "search_history"];
 
-      // Движок синхронизации
       var SyncEngine = {
         timer: null,
         needsSync: false,
@@ -274,14 +265,9 @@
         handleStorageChange: function (event) {
           var key = event.name;
           if (syncKeys.indexOf(key) !== -1) {
-            console.log("Изменен ключ в локальном хранилище: " + key);
             this.needsSync = true;
-            if (this.timer) {
-              clearTimeout(this.timer);
-            }
-            // Дебаунс (задержка) перед отправкой
+            if (this.timer) clearTimeout(this.timer);
             this.timer = setTimeout(function () {
-              // blockSync используется, чтобы не отправлять данные во время первоначальной загрузки
               if (this.needsSync && !blockSync) {
                 var token = localStorage.getItem("token");
                 if (token) {
@@ -297,11 +283,8 @@
           console.log("Запуск синхронизации...");
           this.isSyncSuccessful = false;
           this.sendDataToServer(token).then(function () {
-            if (this.isSyncSuccessful) {
-              console.log("Синхронизация успешно завершена");
-            } else {
-              console.log("Ошибка: Данные для синхронизации отсутствуют");
-            }
+            if (this.isSyncSuccessful) console.log("Синхронизация успешно завершена");
+            else console.log("Ошибка: Данные для синхронизации отсутствуют");
             this.needsSync = false;
           }.bind(this)).catch(function (err) {
             console.log("Ошибка синхронизации:", err);
@@ -317,13 +300,13 @@
             }
           }
           formData.append("file", new Blob([JSON.stringify(data)], { type: "application/json" }));
-          return this.makeHttpRequest("POST", "http://94.156.115.58:803/lampa/sync?token=" + encodeURIComponent(token), formData).then(function (xhr) {
+          return this.makeHttpRequest("POST", serverUrl + "/lampa/sync?token=" + encodeURIComponent(token), formData).then(function (xhr) {
             if (xhr.status === 200) {
               this.isSyncSuccessful = true;
               return JSON.parse(xhr.responseText);
             } else {
               this.isSyncSuccessful = false;
-              console.log("Ошибка при синхронизации: " + xhr.status + " - " + xhr.statusText);
+              console.log("Ошибка при синхронизации: " + xhr.status);
             }
           }.bind(this));
         },
@@ -337,55 +320,38 @@
           };
         },
         loadDataFromServer: function (token) {
-          return this.makeHttpRequest("GET", "http://94.156.115.58:803/lampa/sync?token=" + encodeURIComponent(token)).then(function (xhr) {
-            if (xhr.status === 200) {
-              return JSON.parse(xhr.responseText);
-            } else {
-              console.log("Ошибка при загрузке данных: " + xhr.status + " - " + xhr.statusText);
-            }
+          return this.makeHttpRequest("GET", serverUrl + "/lampa/sync?token=" + encodeURIComponent(token)).then(function (xhr) {
+            if (xhr.status === 200) return JSON.parse(xhr.responseText);
+            else console.log("Ошибка при загрузке данных: " + xhr.status);
           }).then(function (res) {
-            return res.success && res.data ? res.data : (console.log("Ошибка: Данные для синхронизации отсутствуют"), null);
+            return res.success && res.data ? res.data : (console.log("Ошибка: Данные отсутствуют"), null);
           });
         },
         makeHttpRequest: function (method, url, body) {
           return new Promise(function (resolve, reject) {
             var xhr = new XMLHttpRequest();
             xhr.open(method, url, true);
-            if (method === "POST") {
-              xhr.send(body);
-            } else {
-              xhr.send();
-            }
+            if (method === "POST") xhr.send(body);
+            else xhr.send();
             xhr.onload = function () {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(xhr);
-              } else {
-                reject(xhr);
-              }
+              if (xhr.status >= 200 && xhr.status < 300) resolve(xhr);
+              else reject(xhr);
             };
-            xhr.onerror = function () {
-              reject(xhr);
-            };
+            xhr.onerror = function () { reject(xhr); };
           });
         },
         updateLocalStorage: function (serverData) {
-          if (typeof serverData === "undefined") return;
-          if (typeof serverData !== "object" || serverData === null) {
-            console.log("Ошибка: Данные для синхронизации некорректны или отсутствуют");
-            return;
-          }
-
+          if (!serverData || typeof serverData !== "object") return;
           var keys = ["torrents_view", "plugins", "favorite", "file_view", "search_history"];
           for (var i = 0; i < keys.length; i++) {
             var key = keys[i];
-            if (serverData.hasOwnProperty(key) && (Array.isArray(serverData[key]) || typeof serverData[key] === "object")) {
+            if (serverData.hasOwnProperty(key)) {
               if (key === "plugins") {
+                // Логика объединения плагинов
                 var localPlugins = Lampa.Storage.get("plugins") || [];
-                // Добавление новых плагинов
                 for (var j = 0; j < serverData[key].length; j++) {
                   var serverPlugin = serverData[key][j];
                   var exists = localPlugins.find(function (p) { return p.url === serverPlugin.url; });
-
                   if (!exists) {
                     localPlugins.push({
                       name: serverPlugin.name || "Без названия",
@@ -393,14 +359,12 @@
                       status: typeof serverPlugin.status === "number" ? serverPlugin.status : 1,
                       author: serverPlugin.author || "@bylampa"
                     });
-                    // Если плагин активен, подключаем его
-                    if (typeof serverPlugin.status === "number" && serverPlugin.status === 1) {
+                    if (serverPlugin.status === 1) {
                       var script = document.createElement("script");
                       script.src = serverPlugin.url;
                       document.getElementsByTagName("head")[0].appendChild(script);
                     }
                   } else {
-                    // Обновление статуса существующих плагинов
                     if (typeof serverPlugin.status === "number") {
                       if (serverPlugin.status === 1 && exists.status !== 1) {
                         var script = document.createElement("script");
@@ -412,26 +376,19 @@
                   }
                 }
                 Lampa.Storage.set("plugins", localPlugins);
-                localPlugins = Lampa.Storage.get("plugins") || [];
-
+                
                 // Удаление плагинов, которых нет на сервере
+                localPlugins = Lampa.Storage.get("plugins") || [];
                 var pluginsToRemove = localPlugins.filter(function (lp) {
-                  var found = serverData[key].find(function (sp) { return sp.url === lp.url; });
-                  return found === undefined;
+                  return !serverData[key].find(function (sp) { return sp.url === lp.url; });
                 });
-
                 pluginsToRemove.forEach(function (plugin) {
                   var scriptTag = document.querySelector('script[src="' + plugin.url + '"]');
-                  if (scriptTag) {
-                    scriptTag.parentNode.removeChild(scriptTag);
-                  }
+                  if (scriptTag) scriptTag.parentNode.removeChild(scriptTag);
                   var index = localPlugins.indexOf(plugin);
-                  if (index !== -1) {
-                    localPlugins.splice(index, 1);
-                  }
+                  if (index !== -1) localPlugins.splice(index, 1);
                   Lampa.Storage.set("plugins", localPlugins);
                 });
-
               } else if (key === "favorite") {
                 Lampa.Storage.set("favorite", serverData[key]);
                 Lampa.Favorite.init();
@@ -442,21 +399,15 @@
               } else {
                 Lampa.Storage.set(key, serverData[key]);
               }
-            } else {
-              console.log('Ошибка: Данные для ключа "' + key + '" некорректны');
             }
           }
         }
       };
 
-      // Подписка на изменение хранилища
       Lampa.Storage.listener.follow("change", function (event) {
-        if (Lampa.Storage.field("acc_sync")) {
-          SyncEngine.handleStorageChange(event);
-        }
+        if (Lampa.Storage.field("acc_sync")) SyncEngine.handleStorageChange(event);
       });
 
-      // Переменная-блокатор для предотвращения циклической синхронизации при старте
       var blockSync = setInterval(function () {
         if (typeof Lampa !== "undefined") {
           clearInterval(blockSync);
@@ -465,7 +416,7 @@
 
           if (token && syncEnabled) {
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", "http://94.156.115.58:803/checkToken", true);
+            xhr.open("POST", serverUrl + "/checkToken", true);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.onreadystatechange = function () {
               if (xhr.readyState === 4) {
@@ -476,56 +427,35 @@
                     SyncEngine.loadDataFromServer(token).then(function (data) {
                       if (data) {
                         SyncEngine.updateLocalStorage(data);
-                        // Устанавливаем флаг, что начальная загрузка прошла, чтобы не триггерить обратную синхронизацию сразу
                         blockSync = true;
-                      } else {
-                        console.log("Не удалось загрузить данные для синхронизации");
                       }
-                    }).catch(function (err) {
-                      console.log("Ошибка при загрузке данных:", err);
                     });
                   } else {
-                    console.log("Токен недействителен");
                     localStorage.removeItem("token");
                     Lampa.Storage.set("acc_sync", false);
                     Lampa.Noty.show("Токен недействителен");
                   }
-                } else {
-                  console.log("Ошибка при проверке токена:", xhr.statusText);
-                  Lampa.Noty.show("Ошибка запроса на сервер");
                 }
               }
             };
             xhr.send(JSON.stringify({ token: token }));
-          } else {
-            console.log("Вы не зашли в аккаунт или синхронизация отключена");
           }
         }
       }, 200);
 
-      // Кнопка полного сброса данных синхронизации
       Lampa.SettingsApi.addParam({
         component: "acc",
         param: { name: "sync_reset", type: "static" },
-        field: { name: "Сброс данных синхронизации", description: "Внимание !!! После нажатия ваши синхронизированные данные будут удалены" },
+        field: { name: "Сброс данных синхронизации", description: "Данные будут удалены" },
         onRender: function (item) {
           item.on("hover:enter", function () {
             var token = localStorage.getItem("token");
             if (token) {
-              var url = "http://94.156.115.58:803/lampa/sync?token=" + encodeURIComponent(token);
               var xhr = new XMLHttpRequest();
-              xhr.open("DELETE", url);
+              xhr.open("DELETE", serverUrl + "/lampa/sync?token=" + encodeURIComponent(token));
               xhr.onload = function () {
-                if (xhr.status === 200) {
-                  Lampa.Noty.show("Данные синхронизации удалены");
-                } else {
-                  console.error("Ошибка при удалении данных синхронизации:", xhr.status, xhr.statusText);
-                  Lampa.Noty.show("Ошибка при удалении или данные отсутствуют");
-                }
-              };
-              xhr.onerror = function () {
-                console.error("Ошибка при удалении данных синхронизации:", xhr.status, xhr.statusText);
-                Lampa.Noty.show("Ошибка при удалении или данные отсутствуют");
+                if (xhr.status === 200) Lampa.Noty.show("Данные удалены");
+                else Lampa.Noty.show("Ошибка удаления");
               };
               xhr.send();
             } else {
@@ -536,15 +466,7 @@
       });
     }
 
-    // Запуск плагина после готовности Lampa
-    if (window.appready) {
-      startPlugin();
-    } else {
-      Lampa.Listener.follow("app", function (e) {
-        if (e.type == "ready") {
-          startPlugin();
-        }
-      });
-    }
+    if (window.appready) startPlugin();
+    else Lampa.Listener.follow("app", function (e) { if (e.type == "ready") startPlugin(); });
   }());
 }());
